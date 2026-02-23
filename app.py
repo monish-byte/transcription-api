@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.responses import HTMLResponse
 from mistralai import Mistral
 import os
@@ -51,7 +51,7 @@ async def transcribe(file: UploadFile = File(...)):
         filename = f"{transcript_id}.txt"
         file_path = os.path.join(TRANSCRIPT_DIR, filename)
 
-        # Save transcript locally
+        # Save transcript
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(full_text)
 
@@ -102,10 +102,10 @@ def get_transcript(filename: str):
 
 
 # ---------------------------
-# LIST ALL TRANSCRIPTS (FOR KORE.AI CRAWLER)
+# LIST ALL TRANSCRIPTS (ABSOLUTE URL VERSION)
 # ---------------------------
 @app.get("/all-transcripts", response_class=HTMLResponse)
-def list_transcripts():
+def list_transcripts(request: Request):
     files = os.listdir(TRANSCRIPT_DIR)
 
     if not files:
@@ -113,9 +113,12 @@ def list_transcripts():
             content="<h1>No transcripts available yet.</h1>"
         )
 
+    base_url = str(request.base_url).rstrip("/")
+
     links = ""
     for file in files:
-        links += f'<li><a href="/transcripts/{file}">{file}</a></li>'
+        full_url = f"{base_url}/transcripts/{file}"
+        links += f'<li><a href="{full_url}">{file}</a></li>'
 
     html_content = f"""
     <html>
